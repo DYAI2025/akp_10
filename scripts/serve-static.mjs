@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "..", "dist");
-const port = Number(process.env.PORT ?? 3000);
+const parsedPort = Number.parseInt(process.env.PORT ?? "", 10);
+const port = Number.isFinite(parsedPort) ? parsedPort : 3000;
 const host = process.env.HOST ?? "0.0.0.0";
 
 const contentTypes = new Map([
