@@ -108,7 +108,23 @@ async function handleRequest(req, res) {
     return;
   }
 
-  createReadStream(filePath).pipe(res);
+  const fileStream = createReadStream(filePath);
+
+  res.on("close", () => {
+    if (!fileStream.destroyed) {
+      fileStream.destroy();
+    }
+  });
+
+  fileStream.on("error", (error) => {
+    console.error(`Failed to read static asset: ${filePath}`, error);
+
+    if (!res.destroyed) {
+      res.destroy(error);
+    }
+  });
+
+  fileStream.pipe(res);
 }
 
 const server = createServer((req, res) => {
