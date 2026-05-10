@@ -6,10 +6,11 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const root = path.resolve(__dirname, "..", "dist");
+const defaultRoot = path.resolve(__dirname, "..", "dist");
 const parsedPort = Number.parseInt(process.env.PORT ?? "", 10);
 const port = Number.isFinite(parsedPort) ? parsedPort : 3000;
 const host = process.env.HOST ?? "0.0.0.0";
+const root = path.resolve(process.env.STATIC_ROOT ?? defaultRoot);
 
 const contentTypes = new Map([
   [".css", "text/css; charset=utf-8"],
@@ -30,24 +31,31 @@ const contentTypes = new Map([
 function send(res, statusCode, body, headers = {}) {
   res.writeHead(statusCode, {
     "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
     ...headers,
   });
-  res.end(body);
+  res.end(res.req?.method === "HEAD" ? undefined : body);
 }
 
-function resolveAssetPath(requestUrl) {
-  const url = new URL(requestUrl ?? "/", `http://${host}:${port}`);
+export function resolveAssetPath(requestUrl, rootDir = root) {
+  const rawPath = String(requestUrl ?? "/").split(/[?#]/)[0] || "/";
   let decodedPath;
 
   try {
-    decodedPath = decodeURIComponent(url.pathname);
+    decodedPath = decodeURIComponent(rawPath);
   } catch {
     return null;
   }
-  const normalizedPath = path.normalize(decodedPath).replace(/^([/\\])+/, "");
-  const assetPath = path.resolve(root, normalizedPath || "index.html");
 
-  const relativePath = path.relative(root, assetPath);
+  const strippedPath = decodedPath.replace(/^[\/\\]+/, "");
+
+  if (strippedPath.split(/[\/\\]+/).includes("..")) {
+    return null;
+  }
+
+  const normalizedPath = path.normalize(strippedPath);
+  const assetPath = path.resolve(rootDir, normalizedPath || "index.html");
+  const relativePath = path.relative(rootDir, assetPath);
 
   if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
     return null;
@@ -62,8 +70,8 @@ async function fileExists(filePath) {
   return fileStat.isFile();
 }
 
-async function getFilePath(requestUrl) {
-  const assetPath = resolveAssetPath(requestUrl);
+async function getFilePath(requestUrl, rootDir) {
+  const assetPath = resolveAssetPath(requestUrl, rootDir);
 
   if (!assetPath) {
     return null;
@@ -73,24 +81,38 @@ async function getFilePath(requestUrl) {
     return assetPath;
   }
 
-  return path.join(root, "index.html");
+  return path.join(rootDir, "index.html");
 }
 
-async function handleRequest(req, res) {
+export function createStaticServer({ rootDir = root } = {}) {
+  const serverRoot = path.resolve(rootDir);
+
+  return createServer((req, res) => {
+    handleRequest(req, res, serverRoot).catch((error) => {
+      console.error("Unhandled server error", error);
+      send(res, 500, "Internal Server Error", { "Content-Type": "text/plain; charset=utf-8" });
+    });
+  });
+}
+
+async function handleRequest(req, res, rootDir) {
   if (req.url === "/healthz") {
     send(res, 200, "ok", { "Content-Type": "text/plain; charset=utf-8" });
     return;
   }
 
   if (!["GET", "HEAD"].includes(req.method ?? "")) {
-    send(res, 405, "Method Not Allowed", { Allow: "GET, HEAD" });
+    send(res, 405, "Method Not Allowed", {
+      Allow: "GET, HEAD",
+      "Content-Type": "text/plain; charset=utf-8",
+    });
     return;
   }
 
-  const filePath = await getFilePath(req.url);
+  const filePath = await getFilePath(req.url, rootDir);
 
   if (!filePath) {
-    send(res, 403, "Forbidden");
+    send(res, 403, "Forbidden", { "Content-Type": "text/plain; charset=utf-8" });
     return;
   }
 
@@ -127,13 +149,31 @@ async function handleRequest(req, res) {
   fileStream.pipe(res);
 }
 
-const server = createServer((req, res) => {
-  handleRequest(req, res).catch((error) => {
-    console.error("Unhandled server error", error);
-    send(res, 500, "Internal Server Error");
-  });
-});
+function listen() {
+  const server = createStaticServer({ rootDir: root });
 
-server.listen(port, host, () => {
-  console.log(`Static server listening on http://${host}:${port}`);
-});
+  server.listen(port, host, () => {
+    const address = server.address();
+    const actualPort = typeof address === "object" && address ? address.port : port;
+    console.log(`Static server listening on http://${host}:${actualPort}`);
+  });
+
+  const shutdown = (signal) => {
+    console.log(`Received ${signal}, shutting down static server`);
+    server.close((error) => {
+      if (error) {
+        console.error("Failed to close static server", error);
+        process.exit(1);
+      }
+
+      process.exit(0);
+    });
+  };
+
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
+}
+
+if (process.argv[1] === __filename) {
+  listen();
+}
