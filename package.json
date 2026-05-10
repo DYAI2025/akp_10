@@ -1,12 +1,14 @@
 {
-  "name": "react-vite-tailwind",
+  "name": "akp-railway-site",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "start": "node scripts/serve-static.mjs"
   },
   "dependencies": {
     "clsx": "2.1.1",
@@ -25,5 +27,8 @@
     "typescript": "5.9.3",
     "vite": "7.3.2",
     "vite-plugin-singlefile": "2.3.0"
+  },
+  "engines": {
+    "node": ">=20.19.0"
   }
 }
