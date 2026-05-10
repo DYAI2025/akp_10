@@ -48,7 +48,7 @@ export const projects: Project[] = [
       oekologie: "Unversiegelte Zuwegungen für Regendurchlässigkeit",
       wirtschaftlichkeit: "Maximierte Dichte, differenzierte Zugänge, PKW-Erschließung und Feuerwehrumfahrung",
     },
-    imageIndex: 1,
+    imageIndex: 5,
   },
   {
     id: "pestalozzi",
@@ -218,7 +218,7 @@ export const projects: Project[] = [
       oekologie: "Passive Bauweise, Hüllflächen-Bauteilkonditionierung, Wärmepumpe, Geothermie, Solarkollektoren",
       wirtschaftlichkeit: "Identitätsstiftende Magistrale, funktional lesbare Architektur",
     },
-    imageIndex: 1,
+    imageIndex: 5,
   },
   {
     id: "korback-rathaus",

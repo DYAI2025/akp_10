@@ -39,7 +39,7 @@ function Navigation() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16 md:h-20">
-        <button onClick={() => scrollTo("hero")} className="flex flex-col">
+        <button onClick={() => scrollTo("hero")} className="flex flex-col" aria-label="Zur Startsektion scrollen">
           <span className={`text-sm font-bold tracking-widest uppercase ${scrolled ? "text-gray-900" : "text-white"}`}>
             AKP
           </span>
@@ -67,7 +67,9 @@ function Navigation() {
         <button
           className="lg:hidden p-2"
           onClick={() => setOpen(!open)}
-          aria-label="Menü öffnen"
+          aria-label={open ? "Menü schließen" : "Menü öffnen"}
+          aria-expanded={open}
+          aria-controls="mobile-navigation"
         >
           {open ? (
             <X className={`w-5 h-5 ${scrolled ? "text-gray-900" : "text-white"}`} />
@@ -79,7 +81,7 @@ function Navigation() {
 
       {/* Mobile menu */}
       {open && (
-        <div className="lg:hidden bg-white border-t">
+        <div id="mobile-navigation" className="lg:hidden bg-white border-t">
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -366,6 +368,7 @@ function Projects() {
     "/images/project-cultural.jpg",
     "/images/project-commercial.jpg",
     "/images/project-office.jpg",
+    "/images/project-healthcare.jpg",
   ];
 
   return (
@@ -397,6 +400,7 @@ function Projects() {
                     ? "bg-gray-900 text-white"
                     : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                 }`}
+                aria-pressed={activeCategory === cat}
               >
                 {cat}
               </button>
@@ -411,6 +415,7 @@ function Projects() {
               key={project.id}
               onClick={() => setSelectedProject(project)}
               className="text-left group border border-gray-100 hover:border-gray-300 transition-all bg-white"
+              aria-label={`Projektdetails öffnen: ${project.title}`}
             >
               <div
                 className="h-48 md:h-56 relative overflow-hidden"
@@ -455,14 +460,14 @@ function Projects() {
 
       {/* Project detail modal */}
       {selectedProject && (
-        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 pt-20" onClick={() => setSelectedProject(null)}>
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 pt-20" onClick={() => setSelectedProject(null)} role="dialog" aria-modal="true" aria-labelledby="project-dialog-title">
           <div
             className="bg-white max-w-3xl w-full mb-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
               <span className="text-xs tracking-wider uppercase text-gray-400">Projektdetail</span>
-              <button onClick={() => setSelectedProject(null)} className="p-2 hover:bg-gray-100">
+              <button onClick={() => setSelectedProject(null)} className="p-2 hover:bg-gray-100" aria-label="Projektdetails schließen">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
@@ -484,7 +489,7 @@ function Projects() {
                 )}
               </div>
 
-              <h2 className="text-2xl md:text-3xl font-light text-gray-900 mb-4">
+              <h2 id="project-dialog-title" className="text-2xl md:text-3xl font-light text-gray-900 mb-4">
                 {selectedProject.title}
               </h2>
 
@@ -605,6 +610,7 @@ function Publications() {
                   ? "bg-gray-900 text-white"
                   : "bg-gray-100 text-gray-500 hover:bg-gray-200"
               }`}
+              aria-pressed={activeType === t}
             >
               {t}
             </button>
@@ -662,6 +668,8 @@ function Partners() {
               <button
                 onClick={() => setOpenCategory(openCategory === cat.name ? null : cat.name)}
                 className="w-full flex items-center justify-between p-6 text-left"
+                aria-expanded={openCategory === cat.name}
+                aria-controls={`partner-category-${i}`}
               >
                 <div className="flex items-center gap-3">
                   <span className="text-gray-300 text-xs font-mono">0{i + 1}</span>
@@ -673,7 +681,7 @@ function Partners() {
                 </div>
               </button>
               {openCategory === cat.name && (
-                <div className="px-6 pb-6 pt-0">
+                <div id={`partner-category-${i}`} className="px-6 pb-6 pt-0">
                   <ul className="space-y-2">
                     {cat.partners.map((p, j) => (
                       <li key={j} className="text-sm text-gray-500 leading-relaxed">
