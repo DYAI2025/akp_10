@@ -25,6 +25,7 @@ npm run typecheck
 npm test
 npm run build
 npm audit --omit=dev
+npm run smoke:railway
 ```
 
 Die CI führt diese Checks plus einen Smoke-Test des Railway-Startkommandos aus.
@@ -57,7 +58,7 @@ Die GitHub-Actions-Workflow-Datei `.github/workflows/ci.yml` prüft Deployments 
 3. `npm test`
 4. `npm run build`
 5. `npm audit --omit=dev`
-6. Railway-Smoke-Test via `PORT=4173 npm run start`, `/healthz` und Startseiten-Abruf
+6. Railway-Smoke-Test via `npm run smoke:railway` mit `/healthz`, SPA-Fallback, Content-Type- und 404-Prüfung
 
 ## Struktur
 

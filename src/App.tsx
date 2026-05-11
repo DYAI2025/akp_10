@@ -769,8 +769,10 @@ function Contact() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs tracking-wider uppercase text-gray-400 mb-2">Name *</label>
+                    <label htmlFor="contact-name" className="block text-xs tracking-wider uppercase text-gray-400 mb-2">Name *</label>
                     <input
+                      id="contact-name"
+                      name="name"
                       type="text"
                       required
                       value={formData.name}
@@ -780,8 +782,10 @@ function Contact() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs tracking-wider uppercase text-gray-400 mb-2">E-Mail *</label>
+                    <label htmlFor="contact-email" className="block text-xs tracking-wider uppercase text-gray-400 mb-2">E-Mail *</label>
                     <input
+                      id="contact-email"
+                      name="email"
                       type="email"
                       required
                       value={formData.email}
@@ -794,8 +798,10 @@ function Contact() {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs tracking-wider uppercase text-gray-400 mb-2">Telefon</label>
+                    <label htmlFor="contact-phone" className="block text-xs tracking-wider uppercase text-gray-400 mb-2">Telefon</label>
                     <input
+                      id="contact-phone"
+                      name="phone"
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -804,8 +810,10 @@ function Contact() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs tracking-wider uppercase text-gray-400 mb-2">Projekttyp</label>
+                    <label htmlFor="contact-project-type" className="block text-xs tracking-wider uppercase text-gray-400 mb-2">Projekttyp</label>
                     <select
+                      id="contact-project-type"
+                      name="projectType"
                       value={formData.projectType}
                       onChange={(e) => setFormData({ ...formData, projectType: e.target.value })}
                       className="w-full border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:border-gray-900 transition-colors bg-white"
@@ -823,8 +831,10 @@ function Contact() {
                 </div>
 
                 <div>
-                  <label className="block text-xs tracking-wider uppercase text-gray-400 mb-2">Ort des Projekts</label>
+                  <label htmlFor="contact-location" className="block text-xs tracking-wider uppercase text-gray-400 mb-2">Ort des Projekts</label>
                   <input
+                    id="contact-location"
+                    name="location"
                     type="text"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
@@ -834,8 +844,10 @@ function Contact() {
                 </div>
 
                 <div>
-                  <label className="block text-xs tracking-wider uppercase text-gray-400 mb-2">Nachricht *</label>
+                  <label htmlFor="contact-message" className="block text-xs tracking-wider uppercase text-gray-400 mb-2">Nachricht *</label>
                   <textarea
+                    id="contact-message"
+                    name="message"
                     required
                     rows={5}
                     value={formData.message}

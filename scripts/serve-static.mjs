@@ -7,8 +7,17 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const defaultRoot = path.resolve(__dirname, "..", "dist");
-const parsedPort = Number.parseInt(process.env.PORT ?? "", 10);
-const port = Number.isFinite(parsedPort) ? parsedPort : 3000;
+function parsePort(value, fallback = 3000) {
+  const parsed = Number.parseInt(value ?? "", 10);
+
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 65535) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+const port = parsePort(process.env.PORT);
 const host = process.env.HOST ?? "0.0.0.0";
 const root = path.resolve(process.env.STATIC_ROOT ?? defaultRoot);
 
@@ -74,14 +83,24 @@ async function getFilePath(requestUrl, rootDir) {
   const assetPath = resolveAssetPath(requestUrl, rootDir);
 
   if (!assetPath) {
-    return null;
+    return { statusCode: 403 };
   }
 
   if (await fileExists(assetPath).catch(() => false)) {
-    return assetPath;
+    return { filePath: assetPath };
   }
 
-  return path.join(rootDir, "index.html");
+  if (path.extname(assetPath)) {
+    return { statusCode: 404 };
+  }
+
+  const indexPath = path.join(rootDir, "index.html");
+
+  if (await fileExists(indexPath).catch(() => false)) {
+    return { filePath: indexPath };
+  }
+
+  return { statusCode: 404 };
 }
 
 export function createStaticServer({ rootDir = root } = {}) {
@@ -96,7 +115,9 @@ export function createStaticServer({ rootDir = root } = {}) {
 }
 
 async function handleRequest(req, res, rootDir) {
-  if (req.url === "/healthz") {
+  const requestPath = String(req.url ?? "/").split(/[?#]/)[0] || "/";
+
+  if (requestPath === "/healthz") {
     send(res, 200, "ok", { "Content-Type": "text/plain; charset=utf-8" });
     return;
   }
@@ -109,13 +130,16 @@ async function handleRequest(req, res, rootDir) {
     return;
   }
 
-  const filePath = await getFilePath(req.url, rootDir);
+  const result = await getFilePath(req.url, rootDir);
 
-  if (!filePath) {
-    send(res, 403, "Forbidden", { "Content-Type": "text/plain; charset=utf-8" });
+  if (!result.filePath) {
+    const statusCode = result.statusCode ?? 404;
+    const message = statusCode === 403 ? "Forbidden" : "Not Found";
+    send(res, statusCode, message, { "Content-Type": "text/plain; charset=utf-8" });
     return;
   }
 
+  const { filePath } = result;
   const extension = path.extname(filePath).toLowerCase();
   const isIndex = path.basename(filePath) === "index.html";
 

@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "start": "node scripts/serve-static.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "smoke:railway": "node scripts/railway-smoke.mjs"
   },
   "dependencies": {
     "clsx": "2.1.1",
