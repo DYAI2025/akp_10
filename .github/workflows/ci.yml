@@ -33,6 +33,9 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Verify deployment artifact
+        run: npm run verify:deployment
+
       - name: Production dependency audit
         run: npm audit --omit=dev
 
@@ -43,8 +46,10 @@ jobs:
           trap 'kill $SERVER_PID' EXIT
           for attempt in {1..20}; do
             if curl --fail --silent http://127.0.0.1:4173/healthz; then
-              break
+              curl --fail --silent http://127.0.0.1:4173/ | grep -q "AKP"
+              exit 0
             fi
             sleep 0.5
           done
-          curl --fail --silent http://127.0.0.1:4173/ | grep -q "AKP"
+          cat /tmp/akp-server.log
+          exit 1

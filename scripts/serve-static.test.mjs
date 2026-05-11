@@ -55,18 +55,41 @@ describe("Railway static server", () => {
     expect(await fallback.text()).toContain("AKP App");
   });
 
-  it("rejects path traversal attempts before file lookup", () => {
+  it("does not mask missing production assets with the SPA fallback", async () => {
+    const response = await fetch(`${baseUrl}/missing.js`);
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.text()).toBe("Not Found");
+  });
+
+  it("reports a broken build when index.html is unavailable", async () => {
+    await rm(path.join(rootDir, "index.html"));
+
+    const response = await fetch(`${baseUrl}/projekte/rheinblick`);
+
+    expect(response.status).toBe(500);
+    expect(await response.text()).toContain("Build output is missing index.html");
+  });
+
+  it("rejects path traversal attempts before file lookup", async () => {
     expect(resolveAssetPath("/%2e%2e/package.json", rootDir)).toBeNull();
     expect(resolveAssetPath("/..%2fpackage.json", rootDir)).toBeNull();
+
+    const response = await fetch(`${baseUrl}/%2e%2e/package.json`);
+
+    expect([403, 404]).toContain(response.status);
   });
 
   it("returns proper method and HEAD responses", async () => {
     const head = await fetch(`${baseUrl}/app.js`, { method: "HEAD" });
     const method = await fetch(`${baseUrl}/app.js`, { method: "POST" });
+    const healthPost = await fetch(`${baseUrl}/healthz`, { method: "POST" });
 
     expect(head.status).toBe(200);
     expect(await head.text()).toBe("");
     expect(method.status).toBe(405);
     expect(method.headers.get("allow")).toBe("GET, HEAD");
+    expect(healthPost.status).toBe(405);
   });
 });
