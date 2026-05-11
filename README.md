@@ -26,6 +26,7 @@ npm test
 npm run build
 npm run verify:deployment
 npm audit --omit=dev
+npm run smoke:railway
 ```
 
 Die CI führt diese Checks plus einen Smoke-Test des Railway-Startkommandos aus.

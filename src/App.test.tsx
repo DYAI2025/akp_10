@@ -52,6 +52,42 @@ describe("AKP frontend", () => {
     expect(screen.queryByText(/Architektur in Berlin, Jahrbuch 2003/i)).not.toBeInTheDocument();
   });
 
+
+  it("keeps the mobile navigation accessible and closes after selecting an item", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    const menuButton = screen.getByRole("button", { name: "Menü öffnen" });
+    await user.click(menuButton);
+
+    expect(screen.getByRole("button", { name: "Menü schließen" })).toHaveAttribute("aria-expanded", "true");
+
+    const mobileNavigation = screen.getByRole("button", { name: "Menü schließen" }).getAttribute("aria-controls");
+    const mobileMenu = document.getElementById(mobileNavigation ?? "");
+    expect(mobileMenu).toBeInTheDocument();
+
+    const mobileContactLink = within(mobileMenu as HTMLElement).getByRole("button", { name: "Kontakt" });
+    expect(mobileContactLink).toBeInTheDocument();
+
+    await user.click(mobileContactLink);
+
+    expect(screen.getByRole("button", { name: "Menü öffnen" })).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("submits the contact form through labelled fields", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.type(screen.getByLabelText(/Name/i), "Erika Muster");
+    await user.type(screen.getByLabelText(/E-Mail/i), "erika@example.com");
+    await user.type(screen.getByLabelText(/Nachricht/i), "Bitte melden Sie sich zu einem Neubauprojekt.");
+    await user.selectOptions(screen.getByLabelText(/Projekttyp/i), "Wohnungsbau");
+    await user.click(screen.getByRole("button", { name: /Nachricht senden/i }));
+
+    expect(screen.getByText("Nachricht gesendet")).toBeInTheDocument();
+    expect(screen.getByText(/Wir melden uns in Kürze/i)).toBeInTheDocument();
+  });
+
   it("keeps every project image index inside the rendered image manifest", () => {
     const renderedImageCount = 6;
     const invalidProjects = projects.filter((project) => project.imageIndex < 0 || project.imageIndex >= renderedImageCount);
