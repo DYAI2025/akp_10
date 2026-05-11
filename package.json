@@ -11,7 +11,7 @@
     "start": "node scripts/serve-static.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "smoke:railway": "node scripts/railway-smoke.mjs"
+    "verify:deployment": "node scripts/verify-deployment.mjs"
   },
   "dependencies": {
     "clsx": "2.1.1",

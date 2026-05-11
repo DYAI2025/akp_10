@@ -83,24 +83,27 @@ async function getFilePath(requestUrl, rootDir) {
   const assetPath = resolveAssetPath(requestUrl, rootDir);
 
   if (!assetPath) {
-    return { statusCode: 403 };
+    return { status: 403 };
   }
 
   if (await fileExists(assetPath).catch(() => false)) {
-    return { filePath: assetPath };
+    return { status: 200, filePath: assetPath };
   }
 
-  if (path.extname(assetPath)) {
-    return { statusCode: 404 };
+  const requestedPath = String(requestUrl ?? "/").split(/[?#]/)[0] || "/";
+  const hasAssetExtension = path.extname(requestedPath) !== "";
+
+  if (hasAssetExtension) {
+    return { status: 404 };
   }
 
   const indexPath = path.join(rootDir, "index.html");
 
   if (await fileExists(indexPath).catch(() => false)) {
-    return { filePath: indexPath };
+    return { status: 200, filePath: indexPath };
   }
 
-  return { statusCode: 404 };
+  return { status: 500 };
 }
 
 export function createStaticServer({ rootDir = root } = {}) {
@@ -115,13 +118,6 @@ export function createStaticServer({ rootDir = root } = {}) {
 }
 
 async function handleRequest(req, res, rootDir) {
-  const requestPath = String(req.url ?? "/").split(/[?#]/)[0] || "/";
-
-  if (requestPath === "/healthz") {
-    send(res, 200, "ok", { "Content-Type": "text/plain; charset=utf-8" });
-    return;
-  }
-
   if (!["GET", "HEAD"].includes(req.method ?? "")) {
     send(res, 405, "Method Not Allowed", {
       Allow: "GET, HEAD",
@@ -130,16 +126,29 @@ async function handleRequest(req, res, rootDir) {
     return;
   }
 
-  const result = await getFilePath(req.url, rootDir);
-
-  if (!result.filePath) {
-    const statusCode = result.statusCode ?? 404;
-    const message = statusCode === 403 ? "Forbidden" : "Not Found";
-    send(res, statusCode, message, { "Content-Type": "text/plain; charset=utf-8" });
+  if (req.url === "/healthz") {
+    send(res, 200, "ok", { "Content-Type": "text/plain; charset=utf-8" });
     return;
   }
 
-  const { filePath } = result;
+  const lookup = await getFilePath(req.url, rootDir);
+
+  if (lookup.status === 403) {
+    send(res, 403, "Forbidden", { "Content-Type": "text/plain; charset=utf-8" });
+    return;
+  }
+
+  if (lookup.status === 404) {
+    send(res, 404, "Not Found", { "Content-Type": "text/plain; charset=utf-8" });
+    return;
+  }
+
+  if (lookup.status === 500 || !lookup.filePath) {
+    send(res, 500, "Build output is missing index.html", { "Content-Type": "text/plain; charset=utf-8" });
+    return;
+  }
+
+  const filePath = lookup.filePath;
   const extension = path.extname(filePath).toLowerCase();
   const isIndex = path.basename(filePath) === "index.html";
 

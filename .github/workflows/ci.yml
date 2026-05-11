@@ -33,8 +33,23 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Verify deployment artifact
+        run: npm run verify:deployment
+
       - name: Production dependency audit
         run: npm audit --omit=dev
 
       - name: Smoke test Railway start command
-        run: npm run smoke:railway
+        run: |
+          PORT=4173 npm run start > /tmp/akp-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:4173/healthz; then
+              curl --fail --silent http://127.0.0.1:4173/ | grep -q "AKP"
+              exit 0
+            fi
+            sleep 0.5
+          done
+          cat /tmp/akp-server.log
+          exit 1

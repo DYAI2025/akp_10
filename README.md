@@ -24,6 +24,7 @@ npm run dev
 npm run typecheck
 npm test
 npm run build
+npm run verify:deployment
 npm audit --omit=dev
 npm run smoke:railway
 ```
@@ -57,8 +58,9 @@ Die GitHub-Actions-Workflow-Datei `.github/workflows/ci.yml` prüft Deployments 
 2. `npm run typecheck`
 3. `npm test`
 4. `npm run build`
-5. `npm audit --omit=dev`
-6. Railway-Smoke-Test via `npm run smoke:railway` mit `/healthz`, SPA-Fallback, Content-Type- und 404-Prüfung
+5. `npm run verify:deployment` zur Prüfung von `dist/index.html`, Metadaten und Bildassets
+6. `npm audit --omit=dev`
+7. Railway-Smoke-Test via `PORT=4173 npm run start`, `/healthz` und Startseiten-Abruf
 
 ## Struktur
 
@@ -69,8 +71,9 @@ src/
   test/                # Vitest/Testing-Library Setup
   utils/               # Kleine Hilfsfunktionen
 public/images/         # Statische Bildassets
-scripts/serve-static.mjs # Production-Static-Server für Railway
-scripts/*.test.mjs       # Server- und Deployment-nahe Tests
+scripts/serve-static.mjs      # Production-Static-Server für Railway
+scripts/verify-deployment.mjs # Build-Artefakt-Prüfung für CI/Railway
+scripts/*.test.mjs            # Server- und Deployment-nahe Tests
 .github/workflows/ci.yml # Deployment-Readiness-CI
 ```
 

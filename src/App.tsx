@@ -358,6 +358,27 @@ function Projects() {
   const [activeCategory, setActiveCategory] = useState("Alle");
   const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
 
+  useEffect(() => {
+    if (!selectedProject) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedProject(null);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [selectedProject]);
+
   const filtered = activeCategory === "Alle"
     ? projects
     : projects.filter((p) => p.category.includes(activeCategory));
@@ -417,10 +438,13 @@ function Projects() {
               className="text-left group border border-gray-100 hover:border-gray-300 transition-all bg-white"
               aria-label={`Projektdetails öffnen: ${project.title}`}
             >
-              <div
-                className="h-48 md:h-56 relative overflow-hidden"
-                style={{ background: `url(${projectImages[project.imageIndex]}) center/cover` }}
-              >
+              <div className="h-48 md:h-56 relative overflow-hidden">
+                <img
+                  src={projectImages[project.imageIndex]}
+                  alt={`${project.title} in ${project.location}`}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
               </div>
@@ -460,7 +484,7 @@ function Projects() {
 
       {/* Project detail modal */}
       {selectedProject && (
-        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 pt-20" onClick={() => setSelectedProject(null)} role="dialog" aria-modal="true" aria-labelledby="project-dialog-title">
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4 pt-20" onClick={() => setSelectedProject(null)} role="dialog" aria-modal="true" aria-labelledby="project-dialog-title" aria-describedby="project-dialog-description">
           <div
             className="bg-white max-w-3xl w-full mb-8"
             onClick={(e) => e.stopPropagation()}
@@ -472,9 +496,10 @@ function Projects() {
               </button>
             </div>
 
-            <div
-              className="h-48 md:h-64 bg-cover bg-center"
-              style={{ backgroundImage: `url(${projectImages[selectedProject.imageIndex]})` }}
+            <img
+              src={projectImages[selectedProject.imageIndex]}
+              alt={`${selectedProject.title} in ${selectedProject.location}`}
+              className="h-48 md:h-64 w-full object-cover"
             />
 
             <div className="p-6 md:p-10">
@@ -493,7 +518,7 @@ function Projects() {
                 {selectedProject.title}
               </h2>
 
-              <p className="text-gray-600 leading-relaxed mb-8">
+              <p id="project-dialog-description" className="text-gray-600 leading-relaxed mb-8">
                 {selectedProject.description}
               </p>
 
@@ -773,6 +798,7 @@ function Contact() {
                     <input
                       id="contact-name"
                       name="name"
+                      autoComplete="name"
                       type="text"
                       required
                       value={formData.name}
@@ -786,6 +812,7 @@ function Contact() {
                     <input
                       id="contact-email"
                       name="email"
+                      autoComplete="email"
                       type="email"
                       required
                       value={formData.email}
@@ -802,6 +829,7 @@ function Contact() {
                     <input
                       id="contact-phone"
                       name="phone"
+                      autoComplete="tel"
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -835,6 +863,7 @@ function Contact() {
                   <input
                     id="contact-location"
                     name="location"
+                    autoComplete="address-level2"
                     type="text"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
