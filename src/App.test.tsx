@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import App from "./App";
@@ -31,8 +31,14 @@ describe("AKP frontend", () => {
 
     await user.click(screen.getByRole("button", { name: /Projektdetails öffnen: Service-Wohnen/i }));
 
-    expect(screen.getByRole("dialog", { name: /Service-Wohnen mit medizinischer Versorgung/i })).toBeInTheDocument();
+    const dialog = screen.getByRole("dialog", { name: /Service-Wohnen mit medizinischer Versorgung/i });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByRole("img", { name: /Service-Wohnen mit medizinischer Versorgung in Berlin/i })).toBeInTheDocument();
     expect(screen.getByText(/Alle Seniorenwohnungen barrierefrei/i)).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog", { name: /Service-Wohnen mit medizinischer Versorgung/i })).not.toBeInTheDocument();
   });
 
   it("filters publications by type and keeps unrelated entries hidden", async () => {
@@ -51,5 +57,37 @@ describe("AKP frontend", () => {
     const invalidProjects = projects.filter((project) => project.imageIndex < 0 || project.imageIndex >= renderedImageCount);
 
     expect(invalidProjects).toEqual([]);
+  });
+
+  it("renders accessible contact fields and submit feedback", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.type(screen.getByLabelText("Name *"), "Erika Muster");
+    await user.type(screen.getByLabelText("E-Mail *"), "erika@example.com");
+    await user.selectOptions(screen.getByLabelText("Projekttyp"), "Wohnungsbau");
+    await user.type(screen.getByLabelText("Nachricht *"), "Bitte kontaktieren Sie mich zu meinem Bauvorhaben.");
+    await user.click(screen.getByRole("button", { name: /Nachricht senden/i }));
+
+    expect(screen.getByText("Nachricht gesendet")).toBeInTheDocument();
+  });
+
+  it("opens and closes the mobile navigation accessibly", async () => {
+    const user = userEvent.setup();
+    renderApp();
+
+    const menuButton = screen.getByRole("button", { name: "Menü öffnen" });
+    expect(menuButton).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(menuButton);
+
+    expect(screen.getByRole("button", { name: "Menü schließen" })).toHaveAttribute("aria-expanded", "true");
+
+    const mobileNavigation = document.getElementById("mobile-navigation");
+    expect(mobileNavigation).not.toBeNull();
+
+    await user.click(within(mobileNavigation!).getByRole("button", { name: "Kontakt" }));
+
+    expect(screen.getByRole("button", { name: "Menü öffnen" })).toHaveAttribute("aria-expanded", "false");
   });
 });

@@ -74,14 +74,27 @@ async function getFilePath(requestUrl, rootDir) {
   const assetPath = resolveAssetPath(requestUrl, rootDir);
 
   if (!assetPath) {
-    return null;
+    return { status: 403 };
   }
 
   if (await fileExists(assetPath).catch(() => false)) {
-    return assetPath;
+    return { status: 200, filePath: assetPath };
   }
 
-  return path.join(rootDir, "index.html");
+  const requestedPath = String(requestUrl ?? "/").split(/[?#]/)[0] || "/";
+  const hasAssetExtension = path.extname(requestedPath) !== "";
+
+  if (hasAssetExtension) {
+    return { status: 404 };
+  }
+
+  const indexPath = path.join(rootDir, "index.html");
+
+  if (await fileExists(indexPath).catch(() => false)) {
+    return { status: 200, filePath: indexPath };
+  }
+
+  return { status: 500 };
 }
 
 export function createStaticServer({ rootDir = root } = {}) {
@@ -96,11 +109,6 @@ export function createStaticServer({ rootDir = root } = {}) {
 }
 
 async function handleRequest(req, res, rootDir) {
-  if (req.url === "/healthz") {
-    send(res, 200, "ok", { "Content-Type": "text/plain; charset=utf-8" });
-    return;
-  }
-
   if (!["GET", "HEAD"].includes(req.method ?? "")) {
     send(res, 405, "Method Not Allowed", {
       Allow: "GET, HEAD",
@@ -109,13 +117,29 @@ async function handleRequest(req, res, rootDir) {
     return;
   }
 
-  const filePath = await getFilePath(req.url, rootDir);
+  if (req.url === "/healthz") {
+    send(res, 200, "ok", { "Content-Type": "text/plain; charset=utf-8" });
+    return;
+  }
 
-  if (!filePath) {
+  const lookup = await getFilePath(req.url, rootDir);
+
+  if (lookup.status === 403) {
     send(res, 403, "Forbidden", { "Content-Type": "text/plain; charset=utf-8" });
     return;
   }
 
+  if (lookup.status === 404) {
+    send(res, 404, "Not Found", { "Content-Type": "text/plain; charset=utf-8" });
+    return;
+  }
+
+  if (lookup.status === 500 || !lookup.filePath) {
+    send(res, 500, "Build output is missing index.html", { "Content-Type": "text/plain; charset=utf-8" });
+    return;
+  }
+
+  const filePath = lookup.filePath;
   const extension = path.extname(filePath).toLowerCase();
   const isIndex = path.basename(filePath) === "index.html";
 
